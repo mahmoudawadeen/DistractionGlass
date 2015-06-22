@@ -15,20 +15,27 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 
-import java.io.Console;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+
+import android.os.Bundle;
+import android.app.Activity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageSwitcher;
+import android.widget.ImageView;
+import android.widget.ViewSwitcher.ViewFactory;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
@@ -48,18 +55,30 @@ public class MainActivity extends Activity {
     private CardScrollView mCardScroller;
 
     private final static int PORT = 4747;
-    private final static String ADDRESS = "137.250.171.235";
+    private final static String ADDRESS = "137.250.171.225";
 
     private static String message = "on";
 
     private View mView;
     private boolean startSignalRecieved;
 
+    ImageSwitcher imageSwitcher;
+
+    Animation slide_in_left, slide_out_right;
+
+    int imageResources[] = {
+            R.drawable.on,
+            R.drawable.off
+    };
+
+    int curIndex;
+
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
 
         mView = buildView();
+
 
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(new CardScrollAdapter() {
@@ -116,10 +135,10 @@ public class MainActivity extends Activity {
      * Builds a Glass styled "Hello World!" view using the {@link CardBuilder} class.
      */
     private View buildView() {
-        CardBuilder card = new CardBuilder(this, CardBuilder.Layout.TEXT);
-        card.addImage(R.drawable.cap3_off);
-//        card.setText("Waiting for start signal");
-//        card.setEmbeddedLayout(R.layout.iconlayout);
+        CardBuilder card = new CardBuilder(this, CardBuilder.Layout.ALERT);
+        card.setIcon(R.drawable.sand_clock);
+        card.setText("Waiting for start signal");
+        card.setFootnote("start typing to automatically send the start signal");
         return card.getView();
     }
 
@@ -147,8 +166,7 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Object result) {
             CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-            card.setText((String) result);
-            setContentView(card.getView());
+            imageSwitcher.setImageResource(imageResources[result.equals("on")?0:1]);
         }
     }
 
@@ -175,7 +193,30 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Boolean result) {
             if (result) {
-                startSignalRecieved=true;
+                setContentView(R.layout.iconlayout);
+                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
+                slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
+                        android.R.anim.fade_in);
+                slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
+                        android.R.anim.fade_out);
+                imageSwitcher.setInAnimation(slide_in_left);
+                imageSwitcher.setOutAnimation(slide_out_right);
+                imageSwitcher.setFactory(new ViewFactory() {
+                    @Override
+                    public View makeView() {
+
+                        ImageView imageView = new ImageView(MainActivity.this);
+                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
+                        LayoutParams params = new ImageSwitcher.LayoutParams(
+                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+
+                        imageView.setLayoutParams(params);
+                        return imageView;
+
+                    }
+                });
+                startSignalRecieved = true;
                 sendMessage done = new sendMessage();
                 done.execute("received");
                 sendingThread sender = new sendingThread();
@@ -187,7 +228,8 @@ public class MainActivity extends Activity {
             }
         }
     }
-    class sendMessage extends AsyncTask<String,Object,Object>{
+
+    class sendMessage extends AsyncTask<String, Object, Object> {
         @Override
         protected Object doInBackground(String... params) {
             try {
@@ -216,10 +258,10 @@ public class MainActivity extends Activity {
         public sendingThread() {
             capsElapsedTimes = new ArrayList<>();
             while (totalCapsTime != 0) {
-                if (totalCapsTime/4 > 5000) {
+                if (totalCapsTime / 4 > 5000) {
                     Random random = new Random();
                     int low = 5000;
-                    int high = totalCapsTime/4;
+                    int high = totalCapsTime / 4;
                     int r = random.nextInt(high - low) + low;
                     capsElapsedTimes.add(r);
                     totalCapsTime -= r;
@@ -267,6 +309,7 @@ public class MainActivity extends Activity {
             setContentView(card.getView());
 
         }
+
         public ArrayList<Integer> getCapsElapsedTimes() {
             return capsElapsedTimes;
         }
