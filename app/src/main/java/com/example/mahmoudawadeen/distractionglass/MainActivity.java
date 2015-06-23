@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 
 import java.io.IOException;
@@ -24,29 +25,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
-import android.os.Bundle;
-import android.app.Activity;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup.LayoutParams;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.ImageSwitcher;
-import android.widget.ImageView;
-import android.widget.ViewSwitcher.ViewFactory;
 
-/**
- * An {@link Activity} showing a tuggable "Hello World!" card.
- * <p/>
- * The main content view is composed of a one-card {@link CardScrollView} that provides tugging
- * feedback to the user when swipe gestures are detected.
- * If your Glassware intends to intercept swipe gestures, you should set the content view directly
- * and use a {@link com.google.android.glass.touchpad.GestureDetector}.
- *
- * @see <a href="https://developers.google.com/glass/develop/gdk/touch">GDK Developer Guide</a>
- */
 public class MainActivity extends Activity {
 
     /**
@@ -55,30 +34,22 @@ public class MainActivity extends Activity {
     private CardScrollView mCardScroller;
 
     private final static int PORT = 4747;
-    private final static String ADDRESS = "137.250.171.225";
+    private final static String ADDRESS = "137.250.171.235";
 
     private static String message = "on";
 
     private View mView;
     private boolean startSignalRecieved;
 
-    ImageSwitcher imageSwitcher;
 
-    Animation slide_in_left, slide_out_right;
-
-    int imageResources[] = {
-            R.drawable.on,
-            R.drawable.off
-    };
-
-    int curIndex;
+    private boolean good;
+    private int currentCapsLockImage = -1;
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mView = buildView();
-
 
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(new CardScrollAdapter() {
@@ -153,10 +124,6 @@ public class MainActivity extends Activity {
                 DatagramPacket dgp = new DatagramPacket(buf, buf.length, hostAddress, (int) params[1]);
                 socket.send(dgp);
                 message = (message.equals("on") ? "off" : "on");
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            } catch (SocketException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -166,66 +133,44 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(Object result) {
             CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-//            imageSwitcher.setImageResource(imageResources[result.equals("on")?0:1]);
-            card.addImage((result.equals("on")?R.drawable.on:R.drawable.off));
+            currentCapsLockImage = (result.equals("on") ? R.drawable.on : R.drawable.off);
+            card.addImage((result.equals("on") ? R.drawable.on : R.drawable.off));
+            card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
             setContentView(card.getView());
         }
     }
 
-    class receiveStartSignal extends AsyncTask<Object, Object, Boolean> {
+    class receiveStartSignal extends AsyncTask<Object, Object, String> {
 
         @Override
-        protected Boolean doInBackground(Object[] params) {
+        protected String doInBackground(Object[] params) {
             try {
-                Log.d("debug", "starting to receive");
                 byte[] buf = new byte[1000];
                 DatagramSocket socket = new DatagramSocket(34144);
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
-                Log.d("debug", "received");
-                return true;
-            } catch (SocketException e) {
-                e.printStackTrace();
+                socket.close();
+                return new String(datagramPacket.getData(), 0, datagramPacket.getLength());
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return false;
+            return "";
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
-            if (result) {
-                setContentView(R.layout.iconlayout);
-                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
-                slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_in);
-                slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_out);
-                imageSwitcher.setInAnimation(slide_in_left);
-                imageSwitcher.setOutAnimation(slide_out_right);
-                imageSwitcher.setFactory(new ViewFactory() {
-                    @Override
-                    public View makeView() {
-
-                        ImageView imageView = new ImageView(MainActivity.this);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-
-                        LayoutParams params = new ImageSwitcher.LayoutParams(
-                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-
-                        imageView.setLayoutParams(params);
-                        return imageView;
-
-                    }
-                });
+        protected void onPostExecute(String result) {
+            if (result.equals("start")) {
                 startSignalRecieved = true;
                 sendMessage done = new sendMessage();
                 done.execute("received");
                 sendingThread sender = new sendingThread();
                 sender.start();
+                Thread caps = new Thread(new capsLockReceiveThread());
+                caps.start();
+
             } else {
                 CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-                card.setText("receiving start signal failed");
+                card.setText("unknown message: " + result);
                 setContentView(card.getView());
             }
         }
@@ -241,10 +186,6 @@ public class MainActivity extends Activity {
                 InetAddress hostAddress = InetAddress.getByName(ADDRESS);
                 DatagramPacket dgp = new DatagramPacket(buf, buf.length, hostAddress, PORT);
                 socket.send(dgp);
-            } catch (SocketException e) {
-                e.printStackTrace();
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -314,6 +255,38 @@ public class MainActivity extends Activity {
 
         public ArrayList<Integer> getCapsElapsedTimes() {
             return capsElapsedTimes;
+        }
+    }
+
+    class capsLockReceiveThread implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                byte[] buf = new byte[1000];
+                DatagramSocket socket = new DatagramSocket(34144);
+                DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
+                while (true) {
+                    socket.receive(datagramPacket);
+                    String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
+                    Log.d("caps", good + "");
+                    if (currentCapsLockImage != -1 && result.equals("good") != good) {
+                        good = !good;
+                        final CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
+                        card.addImage(currentCapsLockImage);
+                        card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                setContentView(card.getView());
+                            }
+                        });
+
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
