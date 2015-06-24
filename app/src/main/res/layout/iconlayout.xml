@@ -6,9 +6,16 @@
     android:orientation="vertical"
     tools:context=".MainActivity" >
     <ImageSwitcher
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
         android:id="@+id/imageSwitcher"
-        android:layout_gravity="center_horizontal"
-       />
+        android:layout_gravity="left"
+        android:layout_weight="1" />
+
+    <ImageSwitcher
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/imageSwitcher2"
+        android:layout_weight="1"
+        android:layout_gravity="right" />
 </LinearLayout>
