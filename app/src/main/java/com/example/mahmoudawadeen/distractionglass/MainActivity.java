@@ -166,7 +166,6 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
             imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square : R.drawable.off_square);
         }
     }
