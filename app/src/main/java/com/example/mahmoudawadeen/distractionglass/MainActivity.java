@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 
 import java.io.IOException;
@@ -67,8 +68,8 @@ public class MainActivity extends Activity {
     Animation slide_in_left, slide_out_right;
 
     int imageResources[] = {
-            R.drawable.on,
-            R.drawable.off
+            R.drawable.on_square,
+            R.drawable.off_square
     };
 
     int curIndex;
@@ -76,7 +77,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mView = buildView();
 
 
