@@ -132,7 +132,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            ImageView img = (ImageView) findViewById(R.id.imageView);
+            ImageView img = (ImageView) findViewById(R.id.imageView3);
             img.setImageResource((result.equals("on") ? R.drawable.on_square : R.drawable.off_square));
 
 
