@@ -24,54 +24,20 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
-import android.os.Bundle;
-import android.app.Activity;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup.LayoutParams;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.ImageSwitcher;
 import android.widget.ImageView;
-import android.widget.ViewSwitcher.ViewFactory;
 
-/**
- * An {@link Activity} showing a tuggable "Hello World!" card.
- * <p/>
- * The main content view is composed of a one-card {@link CardScrollView} that provides tugging
- * feedback to the user when swipe gestures are detected.
- * If your Glassware intends to intercept swipe gestures, you should set the content view directly
- * and use a {@link com.google.android.glass.touchpad.GestureDetector}.
- *
- * @see <a href="https://developers.google.com/glass/develop/gdk/touch">GDK Developer Guide</a>
- */
+
 public class MainActivity extends Activity {
 
-    /**
-     * {@link CardScrollView} to use as the main content view.
-     */
     private CardScrollView mCardScroller;
 
     private final static int PORT = 4747;
-    private final static String ADDRESS = "137.250.171.225";
+    private final static String ADDRESS = "137.250.171.235";
 
     private static String message = "on";
 
     private View mView;
     private boolean startSignalRecieved;
-
-    ImageSwitcher imageSwitcher;
-
-    Animation slide_in_left, slide_out_right;
-
-    int imageResources[] = {
-            R.drawable.on,
-            R.drawable.off
-    };
-
-    int curIndex;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -165,10 +131,10 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-//            imageSwitcher.setImageResource(imageResources[result.equals("on")?0:1]);
-            card.addImage((result.equals("on")?R.drawable.on:R.drawable.off));
-            setContentView(card.getView());
+            ImageView img = (ImageView) findViewById(R.id.imageView);
+            img.setImageResource((result.equals("on") ? R.drawable.on_square : R.drawable.off_square));
+
+
         }
     }
 
@@ -196,28 +162,6 @@ public class MainActivity extends Activity {
         protected void onPostExecute(Boolean result) {
             if (result) {
                 setContentView(R.layout.iconlayout);
-                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
-                slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_in);
-                slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_out);
-                imageSwitcher.setInAnimation(slide_in_left);
-                imageSwitcher.setOutAnimation(slide_out_right);
-                imageSwitcher.setFactory(new ViewFactory() {
-                    @Override
-                    public View makeView() {
-
-                        ImageView imageView = new ImageView(MainActivity.this);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-
-                        LayoutParams params = new ImageSwitcher.LayoutParams(
-                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-
-                        imageView.setLayoutParams(params);
-                        return imageView;
-
-                    }
-                });
                 startSignalRecieved = true;
                 sendMessage done = new sendMessage();
                 done.execute("received");
