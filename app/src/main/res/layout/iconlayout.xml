@@ -3,12 +3,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     tools:context=".MainActivity" >
     <ImageSwitcher
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/imageSwitcher"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/imageSwitcher3"
         android:layout_gravity="center_horizontal"
-       />
+        android:layout_weight="1" />
+
+    <ImageSwitcher
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/imageSwitcher2"
+        android:layout_weight="1" />
+
+    <ImageSwitcher
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/imageSwitcher"
+        android:layout_weight="1" />
 </LinearLayout>
