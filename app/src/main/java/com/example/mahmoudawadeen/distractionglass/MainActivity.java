@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -43,7 +44,7 @@ public class MainActivity extends Activity {
 
 
     private boolean good;
-    private int currentCapsLockImage = -1;
+    private boolean firstTime = true;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -132,11 +133,13 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-            currentCapsLockImage = (result.equals("on") ? R.drawable.on : R.drawable.off);
-            card.addImage((result.equals("on") ? R.drawable.on : R.drawable.off));
-            card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
-            setContentView(card.getView());
+//            CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
+//            currentCapsLockImage = (result.equals("on") ? R.drawable.on : R.drawable.off);
+            ImageView img = (ImageView) findViewById(R.id.imageView3);
+            img.setImageResource((result.equals("on") ? R.drawable.on_square : R.drawable.off_square));
+//            card.addImage((result.equals("on") ? R.drawable.on : R.drawable.off));
+//            card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+
         }
     }
 
@@ -160,6 +163,7 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(String result) {
             if (result.equals("start")) {
+                setContentView(R.layout.iconlayout);
                 startSignalRecieved = true;
                 sendMessage done = new sendMessage();
                 done.execute("received");
@@ -268,20 +272,27 @@ public class MainActivity extends Activity {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 while (true) {
                     socket.receive(datagramPacket);
-                    String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
-                    Log.d("caps", good + "");
-                    if (currentCapsLockImage != -1 && result.equals("good") != good) {
-                        good = !good;
-                        final CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-                        card.addImage(currentCapsLockImage);
-                        card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                    final String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
+                    final ImageView img = (ImageView) findViewById(R.id.imageView6);
+                    if (firstTime) {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                setContentView(card.getView());
+                                img.setImageResource(result.equals("good") ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                firstTime = false;
                             }
                         });
+                    } else {
+                        if (result.equals("good") != good) {
+                            good = !good;
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    img.setImageResource(result.equals("good") ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                }
+                            });
 
+                        }
                     }
                 }
             } catch (IOException e) {

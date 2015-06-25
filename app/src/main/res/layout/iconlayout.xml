@@ -3,24 +3,59 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     tools:context=".MainActivity" >
-    <ImageSwitcher
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:id="@+id/imageSwitcher3"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="1" />
+        android:orientation="horizontal"
+        tools:context=".MainActivity"
+        android:layout_weight="1">
 
-    <ImageSwitcher
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:id="@+id/imageSwitcher2"
-        android:layout_weight="1" />
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView"
+            android:layout_weight="1" />
 
-    <ImageSwitcher
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView2"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView3"
+            android:layout_weight="1" />
+    </LinearLayout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:id="@+id/imageSwitcher"
-        android:layout_weight="1" />
+        android:orientation="horizontal"
+        tools:context=".MainActivity"
+        android:layout_weight="1">
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView4"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView5"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/imageView6"
+            android:layout_weight="1" />
+    </LinearLayout>
+
 </LinearLayout>
