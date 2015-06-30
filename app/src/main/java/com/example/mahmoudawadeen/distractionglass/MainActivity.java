@@ -60,10 +60,10 @@ public class MainActivity extends Activity {
     private boolean good;
     private boolean firstTime = true;
 
-    ImageSwitcher imageSwitcher_caps;
     ImageSwitcher imageSwitcher;
 
     Animation slide_in_left, slide_out_right;
+    private boolean on;
 
 //    int imageResources_caps[] = {
 //            R.drawable.on,
@@ -166,7 +166,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square : R.drawable.off_square);
+            on = result.equals("on");
         }
     }
 
@@ -194,8 +194,7 @@ public class MainActivity extends Activity {
         protected void onPostExecute(String result) {
             if (result.equals("start")) {
                 setContentView(R.layout.iconlayout);
-                imageSwitcher_caps = (ImageSwitcher) findViewById(R.id.imageSwitcher);
-                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher2);
+                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
 
                 slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
                         android.R.anim.fade_in);
@@ -205,27 +204,10 @@ public class MainActivity extends Activity {
                 slide_out_right.setDuration(500);
 
 
-                imageSwitcher_caps.setInAnimation(slide_in_left);
-                imageSwitcher_caps.setOutAnimation(slide_out_right);
-
                 imageSwitcher.setInAnimation(slide_in_left);
                 imageSwitcher.setOutAnimation(slide_out_right);
 
-                imageSwitcher_caps.setFactory(new ViewFactory() {
-                    @Override
-                    public View makeView() {
 
-                        ImageView imageView = new ImageView(MainActivity.this);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-
-                        LayoutParams params = new ImageSwitcher.LayoutParams(
-                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-
-                        imageView.setLayoutParams(params);
-                        return imageView;
-
-                    }
-                });
                 imageSwitcher.setFactory(new ViewFactory() {
                     @Override
                     public View makeView() {
@@ -357,20 +339,46 @@ public class MainActivity extends Activity {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                imageSwitcher.setImageResource((on) ? R.drawable.on_square_white : R.drawable.off_square_white);
+                                firstTime = false;
                             }
                         });
-
-                        firstTime = false;
-                    } else {
-                        if (result.equals("good") != good) {
-                            good=!good;
+                        try {
+                            Thread.currentThread().sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        if (result.equals("good")) {
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                    imageSwitcher.setImageResource(R.drawable.empty);
                                 }
                             });
+                        }
+                    } else {
+                        if (result.equals("good") != good) {
+                            good = !good;
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    imageSwitcher.setImageResource(on ? R.drawable.on_square_white : R.drawable.off_square_white);
+                                }
+                            });
+                            try {
+                                Thread.currentThread().sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            if (result.equals("good")) {
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        imageSwitcher.setImageResource(R.drawable.empty);
+                                    }
+                                });
+                            }
+
                         }
                     }
                 }
