@@ -166,7 +166,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square : R.drawable.off_square);
+            imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square_white : R.drawable.off_square_white);
         }
     }
 
