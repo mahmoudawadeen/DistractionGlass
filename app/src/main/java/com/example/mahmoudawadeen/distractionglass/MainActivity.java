@@ -343,11 +343,7 @@ public class MainActivity extends Activity {
                                 firstTime = false;
                             }
                         });
-                        try {
-                            Thread.currentThread().sleep(500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+
                         if (result.equals("good")) {
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
@@ -365,11 +361,6 @@ public class MainActivity extends Activity {
                                     imageSwitcher.setImageResource(on ? R.drawable.on_square_white : R.drawable.off_square_white);
                                 }
                             });
-                            try {
-                                Thread.currentThread().sleep(500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
                             if (result.equals("good")) {
                                 MainActivity.this.runOnUiThread(new Runnable() {
                                     @Override
