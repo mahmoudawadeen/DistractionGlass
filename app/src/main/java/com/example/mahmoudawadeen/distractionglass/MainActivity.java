@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -45,6 +43,7 @@ public class MainActivity extends Activity {
 
     private boolean good;
     private boolean firstTime = true;
+    private boolean on;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -133,13 +132,9 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-//            CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-//            currentCapsLockImage = (result.equals("on") ? R.drawable.on : R.drawable.off);
-            ImageView img = (ImageView) findViewById(R.id.imageView3);
-            img.setImageResource((result.equals("on") ? R.drawable.on_square : R.drawable.off_square));
-//            card.addImage((result.equals("on") ? R.drawable.on : R.drawable.off));
-//            card.addImage((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
-
+            ImageView img = (ImageView) findViewById(R.id.imageView);
+            on = result.equals("on");
+            img.setImageResource((result.equals("on") ? R.drawable.on_square_bad : R.drawable.off_square_bad));
         }
     }
 
@@ -273,12 +268,13 @@ public class MainActivity extends Activity {
                 while (true) {
                     socket.receive(datagramPacket);
                     final String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
-                    final ImageView img = (ImageView) findViewById(R.id.imageView6);
+                    final ImageView img = (ImageView) findViewById(R.id.imageView);
                     if (firstTime) {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                img.setImageResource(result.equals("good") ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                        ?R.drawable.on_square_bad : R.drawable.off_square_bad);
                                 firstTime = false;
                             }
                         });
@@ -288,7 +284,8 @@ public class MainActivity extends Activity {
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    img.setImageResource(result.equals("good") ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                    img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                            ?R.drawable.on_square_bad : R.drawable.off_square_bad);
                                 }
                             });
 
