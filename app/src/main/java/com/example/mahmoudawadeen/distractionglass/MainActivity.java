@@ -1,20 +1,29 @@
 package com.example.mahmoudawadeen.distractionglass;
 
-import com.google.android.glass.media.Sounds;
-import com.google.android.glass.widget.CardBuilder;
-import com.google.android.glass.widget.CardScrollAdapter;
-import com.google.android.glass.widget.CardScrollView;
-
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
+import android.widget.ImageSwitcher;
+import android.widget.ImageView;
+import android.widget.ViewSwitcher.ViewFactory;
+
+import com.google.android.glass.media.Sounds;
+import com.google.android.glass.widget.CardBuilder;
+import com.google.android.glass.widget.CardScrollAdapter;
+import com.google.android.glass.widget.CardScrollView;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -23,18 +32,12 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Random;
-
-import android.view.ViewGroup.LayoutParams;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.ImageSwitcher;
-import android.widget.ImageView;
-import android.widget.ViewSwitcher.ViewFactory;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
- * <p>
+ * <p/>
  * The main content view is composed of a one-card {@link CardScrollView} that provides tugging
  * feedback to the user when swipe gestures are detected.
  * If your Glassware intends to intercept swipe gestures, you should set the content view directly
@@ -67,22 +70,12 @@ public class MainActivity extends Activity {
 
     Animation slide_in_left, slide_out_right;
 
-//    int imageResources_caps[] = {
-//            R.drawable.on,
-//            R.drawable.off
-//    }; int imageResources[] = {
-//            R.drawable.thumb_positive,
-//            R.drawable.thumb_negative
-//    };
-
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mView = buildView();
-
-
         mCardScroller = new CardScrollView(this);
         mCardScroller.setAdapter(new CardScrollAdapter() {
             @Override
@@ -201,6 +194,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
+            state = result;
             switch (result) {
                 case "colored":
                     setContentView(R.layout.iconlayout_single_colored);
@@ -287,11 +281,13 @@ public class MainActivity extends Activity {
                         }
                     });
                     break;
-                default:
-                    CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-                    card.setText("unknown message: " + result);
-                    setContentView(card.getView());
-                    break;
+//                default:
+//                    CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
+//                    card.setText("unknown message: " + result);
+//                    Log.d("debugging", "men hena"+result);
+//                    setContentView(card.getView());
+//
+//                    break;
             }
             startSignalRecieved = true;
             sendMessage done = new sendMessage();
@@ -300,6 +296,7 @@ public class MainActivity extends Activity {
             sender.start();
             Thread caps = new Thread(new capsLockReceiveThread());
             caps.start();
+            receiveStartSignal.this.cancel(true);
         }
     }
 
@@ -402,41 +399,81 @@ public class MainActivity extends Activity {
                     final String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
 
                     final ImageView img = (ImageView) findViewById(R.id.imageView);
-
-                    if (firstTime) {
-                        MainActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                switch (state){
-                                    case "double":
-                                        imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
-                                        break;
-                                    case "colored":
-                                        img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
-                                                ?R.drawable.on_square_bad : R.drawable.off_square_bad);
-                                        break;
-                                    case "fading":
-                                        break;
-                                }
-
-
-
-                            }
-                        });
-
-                        firstTime = false;
-                    } else {
-                        if (result.equals("good") != good) {
-                            good = !good;
+                    if (result.equals("good") || result.equals("bad")) {
+                        if (firstTime) {
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
-
-                                    img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
-                                            ?R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                    switch (state) {
+                                        case "double":
+                                            imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                            break;
+                                        case "colored":
+                                            img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                                    ? R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                            break;
+                                        case "fading":
+                                            imageSwitcher.setImageResource((on) ? R.drawable.on_square_white : R.drawable.off_square_white);
+                                            break;
+                                    }
                                 }
+
                             });
+                            if (state.equals("fading") && result.equals("good")) {
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        imageSwitcher.setImageResource(R.drawable.empty);
+                                    }
+                                });
+                            }
+                            firstTime = false;
+                        } else {
+                            if (result.equals("good") != good) {
+                                good = !good;
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        switch (state) {
+                                            case "double":
+                                                imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                                break;
+                                            case "colored":
+                                                img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                                        ? R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                                break;
+                                            case "fading":
+                                                imageSwitcher.setImageResource(on ? R.drawable.on_square_white : R.drawable.off_square_white);
+                                                break;
+                                        }
+                                    }
+                                });
+                                if (state.equals("fading") && result.equals("good")) {
+                                    MainActivity.this.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            imageSwitcher.setImageResource(R.drawable.empty);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        if (result.equals("restart")) {
+                            Log.d("debugging", "here");
+                            Context context = getApplicationContext();
+                            Intent mStartActivity = new Intent(context, MainActivity.class);
+                            int mPendingIntentId = 123456 ;
+                            PendingIntent mPendingIntent = PendingIntent.getActivity(context, mPendingIntentId, mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
+                            AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+                            System.exit(0);
+//                            Intent i = getBaseContext().getPackageManager()
+//                                    .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+//                            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                            startActivity(i);
+
+
                         }
                     }
                 }
@@ -446,5 +483,4 @@ public class MainActivity extends Activity {
 
         }
     }
-
 }
