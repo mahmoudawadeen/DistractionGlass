@@ -194,6 +194,7 @@ public class MainActivity extends Activity {
         protected void onPostExecute(String result) {
             switch(result){
                 case "colored":
+                    setContentView(R.layout.iconlayout_single_colored);
                     break;
                 case "fading":
                     setContentView(R.layout.iconlayout_single_fading);
