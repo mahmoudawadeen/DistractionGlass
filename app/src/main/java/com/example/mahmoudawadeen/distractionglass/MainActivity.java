@@ -196,9 +196,39 @@ public class MainActivity extends Activity {
                 case "colored":
                     break;
                 case "fading":
+                    setContentView(R.layout.iconlayout_single_fading);
+                    imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
+
+                    slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
+                            android.R.anim.fade_in);
+                    slide_in_left.setDuration(500);
+                    slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
+                            android.R.anim.fade_out);
+                    slide_out_right.setDuration(500);
+
+
+                    imageSwitcher.setInAnimation(slide_in_left);
+                    imageSwitcher.setOutAnimation(slide_out_right);
+
+
+                    imageSwitcher.setFactory(new ViewFactory() {
+                        @Override
+                        public View makeView() {
+
+                            ImageView imageView = new ImageView(MainActivity.this);
+                            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
+                            LayoutParams params = new ImageSwitcher.LayoutParams(
+                                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+
+                            imageView.setLayoutParams(params);
+                            return imageView;
+
+                        }
+                    });
                     break;
                 case "double":
-                    setContentView(R.layout.iconlayout);
+                    setContentView(R.layout.iconlayout_double);
                     imageSwitcher_caps = (ImageSwitcher) findViewById(R.id.imageSwitcher);
                     imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher2);
 
