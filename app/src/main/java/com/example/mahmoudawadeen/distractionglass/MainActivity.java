@@ -34,7 +34,7 @@ import android.widget.ViewSwitcher.ViewFactory;
 
 /**
  * An {@link Activity} showing a tuggable "Hello World!" card.
- * <p/>
+ * <p>
  * The main content view is composed of a one-card {@link CardScrollView} that provides tugging
  * feedback to the user when swipe gestures are detected.
  * If your Glassware intends to intercept swipe gestures, you should set the content view directly
@@ -59,6 +59,8 @@ public class MainActivity extends Activity {
 
     private boolean good;
     private boolean firstTime = true;
+    private boolean on;
+    private String state;
 
     ImageSwitcher imageSwitcher_caps;
     ImageSwitcher imageSwitcher;
@@ -166,7 +168,14 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(Object result) {
-            imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square_white : R.drawable.off_square_white);
+            if (state.equals("double"))
+                imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square_white : R.drawable.off_square_white);
+            if (state.equals("colored")) {
+                ImageView img = (ImageView) findViewById(R.id.imageView);
+                img.setImageResource((result.equals("on") ? R.drawable.on_square_bad : R.drawable.off_square_bad));
+            }
+            if (state.equals("colored") || state.equals("fading"))
+                on = result.equals("on");
         }
     }
 
@@ -192,7 +201,7 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
-            switch(result){
+            switch (result) {
                 case "colored":
                     setContentView(R.layout.iconlayout_single_colored);
                     break;
@@ -402,7 +411,7 @@ public class MainActivity extends Activity {
                         firstTime = false;
                     } else {
                         if (result.equals("good") != good) {
-                            good=!good;
+                            good = !good;
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
