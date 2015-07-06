@@ -192,67 +192,74 @@ public class MainActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
-            if (result.equals("start")) {
-                setContentView(R.layout.iconlayout);
-                imageSwitcher_caps = (ImageSwitcher) findViewById(R.id.imageSwitcher);
-                imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher2);
+            switch(result){
+                case "colored":
+                    break;
+                case "fading":
+                    break;
+                case "double":
+                    setContentView(R.layout.iconlayout);
+                    imageSwitcher_caps = (ImageSwitcher) findViewById(R.id.imageSwitcher);
+                    imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher2);
 
-                slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_in);
-                slide_in_left.setDuration(500);
-                slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
-                        android.R.anim.fade_out);
-                slide_out_right.setDuration(500);
+                    slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
+                            android.R.anim.fade_in);
+                    slide_in_left.setDuration(500);
+                    slide_out_right = AnimationUtils.loadAnimation(MainActivity.this,
+                            android.R.anim.fade_out);
+                    slide_out_right.setDuration(500);
 
 
-                imageSwitcher_caps.setInAnimation(slide_in_left);
-                imageSwitcher_caps.setOutAnimation(slide_out_right);
+                    imageSwitcher_caps.setInAnimation(slide_in_left);
+                    imageSwitcher_caps.setOutAnimation(slide_out_right);
 
-                imageSwitcher.setInAnimation(slide_in_left);
-                imageSwitcher.setOutAnimation(slide_out_right);
+                    imageSwitcher.setInAnimation(slide_in_left);
+                    imageSwitcher.setOutAnimation(slide_out_right);
 
-                imageSwitcher_caps.setFactory(new ViewFactory() {
-                    @Override
-                    public View makeView() {
+                    imageSwitcher_caps.setFactory(new ViewFactory() {
+                        @Override
+                        public View makeView() {
 
-                        ImageView imageView = new ImageView(MainActivity.this);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            ImageView imageView = new ImageView(MainActivity.this);
+                            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
-                        LayoutParams params = new ImageSwitcher.LayoutParams(
-                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                            LayoutParams params = new ImageSwitcher.LayoutParams(
+                                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-                        imageView.setLayoutParams(params);
-                        return imageView;
+                            imageView.setLayoutParams(params);
+                            return imageView;
 
-                    }
-                });
-                imageSwitcher.setFactory(new ViewFactory() {
-                    @Override
-                    public View makeView() {
+                        }
+                    });
+                    imageSwitcher.setFactory(new ViewFactory() {
+                        @Override
+                        public View makeView() {
 
-                        ImageView imageView = new ImageView(MainActivity.this);
-                        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                            ImageView imageView = new ImageView(MainActivity.this);
+                            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
-                        LayoutParams params = new ImageSwitcher.LayoutParams(
-                                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                            LayoutParams params = new ImageSwitcher.LayoutParams(
+                                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-                        imageView.setLayoutParams(params);
-                        return imageView;
+                            imageView.setLayoutParams(params);
+                            return imageView;
 
-                    }
-                });
-                startSignalRecieved = true;
-                sendMessage done = new sendMessage();
-                done.execute("received");
-                sendingThread sender = new sendingThread();
-                sender.start();
-                Thread caps = new Thread(new capsLockReceiveThread());
-                caps.start();
-            } else {
-                CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-                card.setText("unknown message: " + result);
-                setContentView(card.getView());
+                        }
+                    });
+                    break;
+                default:
+                    CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
+                    card.setText("unknown message: " + result);
+                    setContentView(card.getView());
+                    break;
             }
+            startSignalRecieved = true;
+            sendMessage done = new sendMessage();
+            done.execute("received");
+            sendingThread sender = new sendingThread();
+            sender.start();
+            Thread caps = new Thread(new capsLockReceiveThread());
+            caps.start();
         }
     }
 
