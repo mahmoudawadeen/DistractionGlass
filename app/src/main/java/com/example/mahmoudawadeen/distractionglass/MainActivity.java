@@ -400,11 +400,27 @@ public class MainActivity extends Activity {
                 while (true) {
                     socket.receive(datagramPacket);
                     final String result = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
+
+                    final ImageView img = (ImageView) findViewById(R.id.imageView);
+
                     if (firstTime) {
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                switch (state){
+                                    case "double":
+                                        imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                        break;
+                                    case "colored":
+                                        img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                                ?R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                        break;
+                                    case "fading":
+                                        break;
+                                }
+
+
+
                             }
                         });
 
@@ -416,6 +432,9 @@ public class MainActivity extends Activity {
                                 @Override
                                 public void run() {
                                     imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+
+                                    img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                            ?R.drawable.on_square_bad : R.drawable.off_square_bad);
                                 }
                             });
                         }
@@ -424,6 +443,7 @@ public class MainActivity extends Activity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
         }
     }
 
