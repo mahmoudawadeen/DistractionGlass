@@ -1,7 +1,5 @@
 <resources>
-    <string name="app_name">DistractionGlass</string>
-    <string name="title_activity_main">Hello World Immersion</string>
+    <string name="app_name">Distraction</string>
+    <string name="title_activity_main">Distraction</string>
     <string name="hello_world">Hello world!</string>
-    <string name="capslock_on">Capslock On</string>
-    <string name="capslock_off">Capslock Off</string>
 </resources>
