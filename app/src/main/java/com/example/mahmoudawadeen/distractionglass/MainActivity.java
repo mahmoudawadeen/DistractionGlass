@@ -377,8 +377,8 @@ public class MainActivity extends Activity {
                     sleepElapsedTimes.remove(indexForSleeping);
                 }
 
-            }catch (InterruptedException e){
-                Log.d("debug","thread interrupted");
+            } catch (InterruptedException e) {
+                Log.d("debug", "thread interrupted");
             }
         }
 
@@ -410,11 +410,10 @@ public class MainActivity extends Activity {
                                         public void run() {
                                             switch (state) {
                                                 case "double":
-                                                    imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                                    imageSwitcher.setImageResource(R.drawable.thumb_negative);
                                                     break;
                                                 case "colored":
-                                                    img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
-                                                            ? R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                                    img.setImageResource((on) ? R.drawable.on_square_bad : R.drawable.off_square_bad);
                                                     break;
                                                 case "fading":
                                                     imageSwitcher.setImageResource((on) ? R.drawable.on_square_bad : R.drawable.off_square_bad);
