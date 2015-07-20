@@ -25,6 +25,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -32,7 +33,9 @@ public class MainActivity extends Activity {
 
 
     private final static int PORT = 4747;
-    private final static String ADDRESS = "137.250.171.235";
+    //    private static String ADDRESS = "192.168.0.100";
+    private static String ADDRESS = "137.250.171.235";
+//    private static String ADDRESS = "-1";
 
     private static String message = "on";
 
@@ -47,55 +50,53 @@ public class MainActivity extends Activity {
     ImageSwitcher imageSwitcher;
 
     Animation slide_in_left, slide_out_right;
+    private boolean finished;
+    private boolean sleep;
+
+    DatagramSocket sendMessageSocket;
+    byte[] sendMessageBuf;
+    InetAddress sendMessageHostAddress;
+    DatagramPacket sendMessageDGP;
+    private sendingThread sender;
+
+    double end;
+    private int layout;
+    private double start;
+    private double timeSlept;
+    private ArrayList<Long> sleepBuffer;
 
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(buildView());
+        try {
+            sendMessageSocket = new DatagramSocket();
+            sendMessageHostAddress = InetAddress.getByName(ADDRESS);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+//        if (ADDRESS.equals("-1")) {
+//            setContentView(buildView(R.drawable.wifi, "Scanning network for the server", "Please wait for the glass to find the server"));
+//            AsyncTask scanning = new scanningTask();
+//            scanning.execute();
+//        } else {
+//            restartApp(this);
+//        }
+        setContentView(buildView(R.drawable.sand_clock, "Waiting for start signal", "Start typing to automatically send the start signal"));
         AsyncTask receiver = new receiveStartSignal();
-        receiver.execute("hey");
+        receiver.execute();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    private View buildView() {
+    private View buildView(int id, String text, String footnote) {
         CardBuilder card = new CardBuilder(this, CardBuilder.Layout.ALERT);
-        card.setIcon(R.drawable.sand_clock);
-        card.setText("Waiting for start signal");
-        card.setFootnote("start typing to automatically send the start signal");
+        card.setIcon(id);
+        card.setText(text);
+        card.setFootnote(footnote);
         return card.getView();
-    }
-
-    class sendAction extends AsyncTask {
-
-        @Override
-        protected Object doInBackground(Object[] params) {
-            sendMessage(message);
-            message = (message.equals("on") ? "off" : "on");
-            return (message.equals("on") ? "off" : "on");
-        }
-
-        @Override
-        protected void onPostExecute(Object result) {
-            if (state.equals("double"))
-                imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square_white : R.drawable.off_square_white);
-            if (state.equals("colored")) {
-                ImageView img = (ImageView) findViewById(R.id.imageView);
-                img.setImageResource((result.equals("on") ? R.drawable.on_square_bad : R.drawable.off_square_bad));
-            }
-            if (state.equals("colored") || state.equals("fading"))
-                on = result.equals("on");
-        }
     }
 
     class receiveStartSignal extends AsyncTask<Object, Object, String> {
@@ -108,6 +109,7 @@ public class MainActivity extends Activity {
                 DatagramSocket socket = new DatagramSocket(34144);
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
+
                 socket.close();
                 return new String(datagramPacket.getData(), 0, datagramPacket.getLength());
             } catch (SocketException e) {
@@ -121,24 +123,37 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(String result) {
             state = result;
+            sender = new sendingThread();
+            Thread caps = new Thread(new capsLockReceiveThread());
+            Log.d("debug", result);
             switch (result) {
                 case "bye":
                     System.exit(0);
                     break;
                 case "restart":
-                    Thread thread = new Thread(new Runnable() {
+                    new Thread(new Runnable() {
                         @Override
                         public void run() {
                             restartApp(MainActivity.this);
                         }
-                    });
-                    thread.start();
+                    }).start();
                     break;
                 case "colored":
                     setContentView(R.layout.iconlayout_single_colored);
+                    layout = R.layout.iconlayout_single_colored;
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendMessage("received");
+                        }
+                    }).start();
+                    sender.start();
+                    caps.start();
+                    receiveStartSignal.this.cancel(true);
                     break;
                 case "fading":
                     setContentView(R.layout.iconlayout_single_fading);
+                    layout = R.layout.iconlayout_single_fading;
                     imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher);
 
                     slide_in_left = AnimationUtils.loadAnimation(MainActivity.this,
@@ -168,8 +183,18 @@ public class MainActivity extends Activity {
 
                         }
                     });
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendMessage("received");
+                        }
+                    }).start();
+                    sender.start();
+                    caps.start();
+                    receiveStartSignal.this.cancel(true);
                     break;
                 case "double":
+                    layout = R.layout.iconlayout_double;
                     setContentView(R.layout.iconlayout_double);
                     imageSwitcher_caps = (ImageSwitcher) findViewById(R.id.imageSwitcher);
                     imageSwitcher = (ImageSwitcher) findViewById(R.id.imageSwitcher2);
@@ -218,30 +243,48 @@ public class MainActivity extends Activity {
 
                         }
                     });
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendMessage("received");
+                        }
+                    }).start();
+                    sender.start();
+                    caps.start();
+                    receiveStartSignal.this.cancel(true);
                     break;
-//                default:
-//                    CardBuilder card = new CardBuilder(MainActivity.this, CardBuilder.Layout.TEXT);
-//                    card.setText("unknown message: " + result);
-//                    Log.d("debugging", "men hena"+result);
-//                    setContentView(card.getView());
-//
-//                    break;
+                default:
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            setContentView(buildView(R.drawable.ic_warning_150, "Unknown message", "Please restart the application"));
+                        }
+                    });
+
+                    break;
             }
-            sendMessage done = new sendMessage();
-            done.execute("received");
-            sendingThread sender = new sendingThread();
-            sender.start();
-            Thread caps = new Thread(new capsLockReceiveThread());
-            caps.start();
-            receiveStartSignal.this.cancel(true);
         }
     }
 
-    class sendMessage extends AsyncTask<String, Object, Object> {
+    class sendAction extends AsyncTask {
+
         @Override
-        protected Object doInBackground(String... params) {
-            sendMessage(params[0]);
-            return null;
+        protected Object doInBackground(Object[] params) {
+            sendMessage(message);
+            message = (message.equals("on") ? "off" : "on");
+            return (message.equals("on") ? "off" : "on");
+        }
+
+        @Override
+        protected void onPostExecute(Object result) {
+            if (state.equals("double"))
+                imageSwitcher_caps.setImageResource(result.equals("on") ? R.drawable.on_square_white : R.drawable.off_square_white);
+            if (state.equals("colored")) {
+                ImageView img = (ImageView) findViewById(R.id.imageView);
+                img.setImageResource((result.equals("on") ? R.drawable.on_square_bad : R.drawable.off_square_bad));
+            }
+            if (state.equals("colored") || state.equals("fading"))
+                on = result.equals("on");
         }
     }
 
@@ -281,33 +324,61 @@ public class MainActivity extends Activity {
         }
 
         public void run() {
-            Random random = new Random();
-            while (capsElapsedTimes.size() != 0) {
-                try {
-                    int r;
+            try {
+                Random random = new Random();
+                while (!finished && capsElapsedTimes.size() != 0) {
+                    int indexForSleeping;
                     if (capsElapsedTimes.size() > 1)
-                        r = random.nextInt(capsElapsedTimes.size() - 1);
+                        indexForSleeping = random.nextInt(capsElapsedTimes.size() - 1);
                     else
-                        r = 0;
+                        indexForSleeping = 0;
                     AsyncTask on = new sendAction();
-                    Log.d("debug", "on for " + capsElapsedTimes.get(r));
+                    sleepBuffer = new ArrayList<>();
+                    start = System.nanoTime();
+                    end = capsElapsedTimes.get(indexForSleeping);
+                    sleepBuffer.add((long) end);
+                    Log.d("debug", "on for " + capsElapsedTimes.get(indexForSleeping));
                     on.execute(ADDRESS, PORT);
-                    sleep(capsElapsedTimes.get(r));
-                    capsElapsedTimes.remove(r);
-                    AsyncTask off = new sendAction();
-                    Random sleepRandomize = new Random();
-                    int index;
+                    int i = 0;
+                    while (i < sleepBuffer.size() || sleep) {
+                        if (sleep)
+                            sleep(100);
+                        else {
+                            if (sleepBuffer.get(i) <= 0)
+                                break;
+                            sleep(sleepBuffer.get(i));
+                            i++;
+                        }
+
+                    }
+                    capsElapsedTimes.remove(indexForSleeping);
+                    on = new sendAction();
                     if (sleepElapsedTimes.size() > 1)
-                        index = sleepRandomize.nextInt(sleepElapsedTimes.size() - 1);
+                        indexForSleeping = random.nextInt(sleepElapsedTimes.size() - 1);
                     else
-                        index = 0;
-                    Log.d("debug", "off for " + sleepElapsedTimes.get(index));
-                    off.execute(ADDRESS, PORT);
-                    sleep(sleepElapsedTimes.get(index));
-                    sleepElapsedTimes.remove(index);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                        indexForSleeping = 0;
+                    sleepBuffer = new ArrayList<>();
+                    start = System.nanoTime();
+                    end = sleepElapsedTimes.get(indexForSleeping);
+                    sleepBuffer.add((long) end);
+                    Log.d("debug", "off for " + sleepElapsedTimes.get(indexForSleeping));
+                    on.execute(ADDRESS, PORT);
+                    i = 0;
+                    while (i < sleepBuffer.size() || sleep) {
+                        if (sleep)
+                            sleep(100);
+                        else {
+                            if (sleepBuffer.get(i) <= 0)
+                                break;
+                            sleep(sleepBuffer.get(i));
+                            i++;
+                        }
+                    }
+                    sleepElapsedTimes.remove(indexForSleeping);
                 }
+
+            }catch (InterruptedException e){
+                Log.d("debug","thread interrupted");
             }
         }
 
@@ -332,53 +403,25 @@ public class MainActivity extends Activity {
                     switch (result) {
                         case "good":
                         case "bad":
-                            if (firstTime) {
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        switch (state) {
-                                            case "double":
-                                                imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
-                                                break;
-                                            case "colored":
-                                                img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
-                                                        ? R.drawable.on_square_bad : R.drawable.off_square_bad);
-                                                break;
-                                            case "fading":
-                                                imageSwitcher.setImageResource((on) ? R.drawable.on_square_white : R.drawable.off_square_white);
-                                                break;
-                                        }
-                                    }
-
-                                });
-                                if (state.equals("fading") && result.equals("good")) {
-                                    MainActivity.this.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            imageSwitcher.setImageResource(R.drawable.empty);
-                                        }
-                                    });
-                                }
-                                firstTime = false;
-                            } else {
-                                if (result.equals("good") != good) {
-                                    good = !good;
+                            if (!finished && !sleep)
+                                if (firstTime) {
                                     MainActivity.this.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             switch (state) {
                                                 case "double":
-                                                    imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                                    imageSwitcher.setImageResource((result.equals("good")) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
                                                     break;
                                                 case "colored":
                                                     img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
                                                             ? R.drawable.on_square_bad : R.drawable.off_square_bad);
                                                     break;
                                                 case "fading":
-                                                    imageSwitcher.setImageResource(on ? R.drawable.on_square_white : R.drawable.off_square_white);
+                                                    imageSwitcher.setImageResource((on) ? R.drawable.on_square_bad : R.drawable.off_square_bad);
                                                     break;
                                             }
                                         }
+
                                     });
                                     if (state.equals("fading") && result.equals("good")) {
                                         MainActivity.this.runOnUiThread(new Runnable() {
@@ -388,8 +431,72 @@ public class MainActivity extends Activity {
                                             }
                                         });
                                     }
+                                    firstTime = false;
+                                } else {
+                                    if (result.equals("good") != good) {
+                                        good = !good;
+                                        MainActivity.this.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                switch (state) {
+                                                    case "double":
+                                                        imageSwitcher.setImageResource((good) ? R.drawable.thumb_positive : R.drawable.thumb_negative);
+                                                        break;
+                                                    case "colored":
+                                                        img.setImageResource(result.equals("good") ? (on) ? R.drawable.on_square_good : R.drawable.off_square_good : (on)
+                                                                ? R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                                        break;
+                                                    case "fading":
+                                                        imageSwitcher.setImageResource(on ? R.drawable.on_square_bad : R.drawable.off_square_bad);
+                                                        break;
+                                                }
+                                            }
+                                        });
+                                        if (state.equals("fading") && result.equals("good")) {
+                                            MainActivity.this.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    imageSwitcher.setImageResource(R.drawable.empty);
+                                                }
+                                            });
+                                        }
+                                    }
                                 }
-                            }
+                            break;
+                        case "finish":
+                            finished = true;
+                            sendMessageSocket.close();
+                            sender.interrupt();
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setContentView(buildView(R.drawable.finish, "Finish Button was clicked", "Please restart or close the test"));
+                                }
+                            });
+
+                            break;
+                        case "sleep":
+                            sleep = true;
+                            timeSlept = (System.nanoTime() - start) / 1000000.0;
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    findViewById(R.id.topLinearLayout).setAlpha(0.5F);
+                                }
+                            });
+                            break;
+                        case "wakeup":
+                            end -= timeSlept;
+                            if (end > 0)
+                                sleepBuffer.add((long) end);
+                            start = System.nanoTime();
+                            sleep = false;
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    findViewById(R.id.topLinearLayout).setAlpha(1);
+                                }
+                            });
                             break;
                         case "bye":
                             System.exit(0);
@@ -406,20 +513,21 @@ public class MainActivity extends Activity {
         }
     }
 
-    public static void restartApp(MainActivity act) {
-        sendMessage("restart received");
+    public void restartApp(final MainActivity act) {
         try {
+            sendMessage("restart received");
             String message = "";
             DatagramSocket ackSocket = new DatagramSocket(null);
             ackSocket.setReuseAddress(true);
             ackSocket.bind(new InetSocketAddress("137.250.171.64", PORT));
             byte[] ackBuf = new byte[1000];
             DatagramPacket dgp = new DatagramPacket(ackBuf, ackBuf.length);
+            Log.d("debug", message);
             while (!message.equals("ack received")) {
                 sendMessage("restart received");
                 ackSocket.receive(dgp);
                 message = new String(dgp.getData(), 0, dgp.getLength());
-                Log.d("debugging", message);
+                Log.d("debug", message);
             }
             ackSocket.close();
         } catch (IOException e) {
@@ -434,18 +542,68 @@ public class MainActivity extends Activity {
         System.exit(0);
     }
 
-    public static void sendMessage(String message) {
+    public void sendMessage(String message) {
         try {
-            DatagramSocket socket = new DatagramSocket();
-            byte[] buf = message.getBytes();
-            InetAddress hostAddress = InetAddress.getByName(ADDRESS);
-            DatagramPacket dgp = new DatagramPacket(buf, buf.length, hostAddress, PORT);
-            socket.send(dgp);
-            socket.close();
+            sendMessageBuf = message.getBytes();
+            sendMessageDGP = new DatagramPacket(sendMessageBuf, sendMessageBuf.length, sendMessageHostAddress, PORT);
+            sendMessageSocket.send(sendMessageDGP);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
+
+    public String printReachableHosts(InetAddress inetAddress) {
+        String ipAddress = inetAddress.toString();
+        ipAddress = ipAddress.substring(1, ipAddress.lastIndexOf('.')) + ".";
+        for (int i = 0; i < 256; i++) {
+            String otherAddress = ipAddress + String.valueOf(i);
+            try {
+                if (InetAddress.getByName(otherAddress.toString()).isReachable(50)) {
+                    if (!otherAddress.toString().endsWith(".1") && !otherAddress.toString().endsWith(".105")) {
+                        ADDRESS = otherAddress.toString();
+                        Log.d("address", otherAddress);
+                        sendMessageHostAddress = InetAddress.getByName(ADDRESS);
+                        return ADDRESS;
+                    }
+                }
+
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (ADDRESS.equals("-1"))
+            try {
+                printReachableHosts(InetAddress.getByName("192.168.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        return ADDRESS;
+    }
+
+    class scanningTask extends AsyncTask<Object, String, String> {
+        @Override
+        protected String doInBackground(Object... params) {
+            try {
+                Log.d("address", "start searching");
+                return printReachableHosts(InetAddress.getByName("192.168.0.0"));
+
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            return "";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.d("address", "searching ended");
+            setContentView(buildView(R.drawable.sand_clock, "Waiting for start signal", "Start typing to automatically send the start signal"));
+            AsyncTask receiver = new receiveStartSignal();
+            receiver.execute();
+        }
+    }
+
 
 }
